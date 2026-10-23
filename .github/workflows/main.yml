@@ -34,14 +34,14 @@ jobs:
     # ==========================================
     - name: Build Embed Debug APK
       if: ${{ matrix.build_type == 'Debug' }}
-      run: bash ./gradlew assembleEmbedDebug
+      run: bash ./gradlew assembleEmbedNoRecordDebug
 
     - name: Artifact (Bottle Flip Debug APK)
       if: ${{ matrix.build_type == 'Debug' }}
       uses: actions/upload-artifact@v4
       with:
         name: Bottle-Flip-Debug
-        path: app/build/outputs/apk/embed/debug/*.apk
+        path: app/build/outputs/apk/embedNoRecord/debug/*.apk
 
     # ==========================================
     # СБОРКА RELEASE (Для RuStore)
