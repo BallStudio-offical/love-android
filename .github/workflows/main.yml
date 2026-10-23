@@ -5,9 +5,6 @@ on: [push, pull_request]
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        build_type: [Debug, Release]
     env:
       GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx4G'"
     steps:
@@ -29,30 +26,20 @@ jobs:
         java-version: 17
         cache: gradle
 
-    # ==========================================
-    # СБОРКА DEBUG (Для теста на телефоне)
-    # ==========================================
-    - name: Build Embed Debug APK
-      if: ${{ matrix.build_type == 'Debug' }}
-      run: bash ./gradlew assembleEmbedNoRecordDebug
+    # Принудительно ставим правильный NDK и CMake
+    - name: Install NDK and CMake
+      run: |
+        echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;26.1.10909125" "cmake;3.22.1"
+        echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
-    - name: Artifact (Bottle Flip Debug APK)
-      if: ${{ matrix.build_type == 'Debug' }}
+    # Собираем сразу оба APK (Debug и Release) в одной задаче
+    - name: Build APKs
+      run: |
+        bash ./gradlew assembleEmbedNoRecordDebug assembleEmbedNoRecordRelease --stacktrace
+
+    # Загружаем все готовые файлы
+    - name: Upload APKs
       uses: actions/upload-artifact@v4
       with:
-        name: Bottle-Flip-Debug
-        path: app/build/outputs/apk/embedNoRecord/debug/*.apk
-
-    # ==========================================
-    # СБОРКА RELEASE (Для RuStore)
-    # ==========================================
-    - name: Build Embed Release APK
-      if: ${{ matrix.build_type == 'Release' }}
-      run: bash ./gradlew assembleEmbedNoRecordRelease
-
-    - name: Artifact (Bottle Flip Unsigned Release APK)
-      if: ${{ matrix.build_type == 'Release' }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: Bottle-Flip-Release-Unsigned
-        path: app/build/outputs/apk/embedNoRecord/release/*.apk
+        name: Bottle-Flip-APKs
+        path: app/build/outputs/apk/embedNoRecord/**/*.apk
